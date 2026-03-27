@@ -3,83 +3,174 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Minijuego Tortugas</title>
+<title>Juego</title>
 
 <style>
 body{
   margin:0;
   text-align:center;
-  background:#1a1a1a;
+  background:#111;
   color:white;
   font-family:Arial;
 }
 
 canvas{
-  display:block;
-  margin:auto;
   background:#6ec1ff;
   width:100%;
   max-width:700px;
-  height:auto;
 }
 
-#overlay{
-  position:fixed;
-  top:0;
-  left:0;
-  width:100%;
-  height:100%;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  background:rgba(0,0,0,0.8);
-  flex-direction:column;
-  z-index:10;
-}
-
-#formAlias, #formCel, #formMensaje{
-  position:fixed;
-  top:50%;
-  left:50%;
-  transform:translate(-50%,-50%);
-  background:#222;
-  padding:20px;
-  border-radius:10px;
-  z-index:20;
-}
-
-input{padding:12px;margin:8px;font-size:16px;}
-button{padding:12px 20px;font-size:16px;}
-
-#btnSalto{
+#btn{
   position:fixed;
   bottom:10px;
   left:50%;
   transform:translateX(-50%);
   width:80%;
-  max-width:400px;
   padding:20px;
   font-size:24px;
-  border:none;
-  border-radius:15px;
   background:#ffcc00;
-  z-index:30;
+  border:none;
+  border-radius:10px;
+}
+
+#overlay{
+  position:fixed;
+  width:100%;
+  height:100%;
+  background:rgba(0,0,0,0.7);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-size:20px;
 }
 </style>
 </head>
 
 <body>
 
-<h2>🎮 MINIJUEGO DE FERNANDO DAEBOT 🎮</h2>
+<h3>🎮 MINIJUEGO 🎮</h3>
 <div>❤️ <span id="vidasUI"></span> | ⭐ <span id="puntosUI">0</span></div>
 
-<div id="overlay">
-<h2 id="mensaje">📱 TOCA SALTAR PARA JUGAR</h2>
-</div>
+<div id="overlay">TOCA EL BOTÓN PARA JUGAR</div>
 
-<div id="formAlias" style="display:none;">
-<input id="alias" placeholder="Alias">
-<button onclick="nextCel()">Siguiente</button>
-</div>
+<canvas id="game" width="700" height="300"></canvas>
 
-<div id="formCel" style="display:none
+<button id="btn">SALTAR</button>
+
+<script>
+let canvas=document.getElementById("game");
+let ctx=canvas.getContext("2d");
+
+let y=200, vy=0;
+let suelo=240;
+let gravedad=0.8;
+let salto=-12;
+
+let estado="pausa";
+let saltos=0;
+
+let vidas=9;
+let puntos=0;
+
+let tortugas=[];
+
+// BOTÓN
+let btn=document.getElementById("btn");
+
+btn.onclick=accion;
+btn.ontouchstart=accion;
+
+document.addEventListener("keydown",e=>{
+  if(e.code==="Space") accion();
+});
+
+function accion(){
+  if(estado==="pausa"){
+    estado="jugando";
+    overlay.style.display="none";
+  }else{
+    if(saltos<2){
+      vy=salto;
+      saltos++;
+    }
+  }
+}
+
+// JUGADOR
+function player(){
+  ctx.fillStyle="green";
+  ctx.fillRect(100,y,25,20);
+}
+
+// TORTUGA
+function tortuga(t){
+  ctx.fillStyle="green";
+  ctx.fillRect(t.x,t.y,25,15);
+}
+
+// GENERAR
+setInterval(()=>{
+  if(estado==="jugando"){
+    tortugas.push({x:700,y:suelo-15});
+  }
+},1000);
+
+// LOOP
+function loop(){
+
+  ctx.clearRect(0,0,700,300);
+
+  ctx.fillStyle="#6ec1ff";
+  ctx.fillRect(0,0,700,300);
+
+  ctx.fillStyle="brown";
+  ctx.fillRect(0,suelo,700,60);
+
+  if(estado==="jugando"){
+
+    vy+=gravedad;
+    y+=vy;
+
+    if(y>suelo-20){
+      y=suelo-20;
+      vy=0;
+      saltos=0;
+    }
+
+    tortugas.forEach((t,i)=>{
+      t.x-=5;
+
+      tortuga(t);
+
+      if(
+        t.x<120 && t.x+25>100 &&
+        y+20>t.y && y<t.y+15
+      ){
+        if(vy>0){
+          puntos++;
+          vy=-8;
+          tortugas.splice(i,1);
+        }else{
+          vidas--;
+          estado="pausa";
+          overlay.innerText="PERDISTE - TOCA PARA SEGUIR";
+          overlay.style.display="flex";
+          tortugas=[];
+        }
+      }
+    });
+  }
+
+  player();
+
+  puntosUI.innerText=puntos;
+  vidasUI.innerText="❤️".repeat(vidas);
+
+  requestAnimationFrame(loop);
+}
+
+loop();
+</script>
+
+</body>
+</html>
