@@ -16,27 +16,57 @@ canvas{
   margin:auto;
   background:#6ec1ff;
 }
+
 #overlay{
-  position:absolute;
+  position:fixed;
+  top:0;
+  left:0;
   width:100%;
   height:100%;
   display:flex;
   justify-content:center;
   align-items:center;
-  background:rgba(0,0,0,0.7);
+  background:rgba(0,0,0,0.8);
   flex-direction:column;
+  z-index:10;
 }
+
+#formAlias, #formCel, #formMensaje{
+  position:fixed;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  background:#222;
+  padding:20px;
+  border-radius:10px;
+  z-index:20;
+}
+
 input{padding:10px;margin:5px;}
 button{padding:10px;}
+
+#btnSalto{
+  position:fixed;
+  bottom:20px;
+  left:50%;
+  transform:translateX(-50%);
+  padding:20px 40px;
+  font-size:20px;
+  border:none;
+  border-radius:10px;
+  background:#ffcc00;
+  z-index:30;
+}
 </style>
 </head>
+
 <body>
 
 <h1>🎮 MINIJUEGO DE FERNANDO DAEBOT 🎮</h1>
 <div>❤️ <span id="vidasUI"></span> | ⭐ <span id="puntosUI">0</span></div>
 
 <div id="overlay">
-<h2 id="mensaje">⏸ Presiona ESPACIO</h2>
+<h2 id="mensaje">📱 TOCA SALTAR PARA JUGAR</h2>
 </div>
 
 <div id="formAlias" style="display:none;">
@@ -55,6 +85,8 @@ button{padding:10px;}
 </div>
 
 <canvas id="game" width="700" height="300"></canvas>
+
+<button id="btnSalto">SALTAR</button>
 
 <script>
 let canvas=document.getElementById("game");
@@ -78,60 +110,51 @@ let estado="pausa";
 
 let tortugas=[];
 let ultimoSpawn=0;
-
 let tiempoInicio=Date.now();
 
-// control
-document.addEventListener("keydown",e=>{
-  if(e.code==="Space"){
-    if(estado==="pausa"){
-      estado="jugando";
-      overlay.style.display="none";
-    }else if(estado==="jugando"){
-      if(saltos<maxSaltos){
-        vy=salto;
-        saltos++;
-      }
+// BOTÓN TÁCTIL
+let btn=document.getElementById("btnSalto");
+
+btn.addEventListener("touchstart",accionSalto);
+btn.addEventListener("click",accionSalto);
+
+function accionSalto(){
+  if(estado==="pausa"){
+    estado="jugando";
+    overlay.style.display="none";
+  }else if(estado==="jugando"){
+    if(saltos<maxSaltos){
+      vy=salto;
+      saltos++;
     }
   }
-});
+}
 
-// 🦖 T-REX MEJORADO
+// DINO + JINETE
 function player(){
   ctx.fillStyle="#2ecc71";
-
-  // cuerpo
   ctx.fillRect(100,y,24,18);
-
-  // cabeza grande
   ctx.fillRect(120,y+2,14,10);
-
-  // mandíbula
   ctx.fillRect(122,y+10,12,4);
-
-  // cola
   ctx.fillRect(94,y+8,6,4);
 
-  // patas
   ctx.fillRect(105,y+18,4,5);
   ctx.fillRect(112,y+18,4,5);
 
-  // ojo
   ctx.fillStyle="white";
   ctx.fillRect(126,y+5,3,3);
 
-  // 👨‍🔧 jinete tipo mario pixel
-  ctx.fillStyle="red"; // gorra
+  ctx.fillStyle="red";
   ctx.fillRect(104,y-10,12,4);
 
-  ctx.fillStyle="black"; // bigote/cara sombra
+  ctx.fillStyle="black";
   ctx.fillRect(108,y-6,4,3);
 
-  ctx.fillStyle="blue"; // ropa
+  ctx.fillStyle="blue";
   ctx.fillRect(106,y-4,8,6);
 }
 
-// 🐢 tortuga
+// TORTUGA
 function drawTortuga(t){
   ctx.fillStyle="green";
   ctx.fillRect(t.x,t.y,26,14);
@@ -140,7 +163,7 @@ function drawTortuga(t){
   ctx.fillRect(t.x+6,t.y+4,14,6);
 }
 
-// ⚡ VELOCIDAD MEJORADA
+// VELOCIDAD PROGRESIVA
 function actualizarVelocidad(){
   let tiempo=(Date.now()-tiempoInicio)/1000;
 
@@ -153,7 +176,7 @@ function actualizarVelocidad(){
   if(velocidad > 18) velocidad = 18;
 }
 
-// 🐢 GENERACIÓN MÁS DIFÍCIL
+// GENERAR
 function generar(){
   let t=Date.now();
 
@@ -167,13 +190,13 @@ function generar(){
     y:suelo-15
   });
 
-  ultimoSpawn = t;
+  ultimoSpawn=t;
 }
 
-// loop
+// LOOP
 function loop(){
 
-  if(estado==="final") return; // 🔥 DETENER TODO
+  if(estado==="final") return;
 
   ctx.clearRect(0,0,700,300);
 
@@ -230,7 +253,7 @@ function loop(){
   requestAnimationFrame(loop);
 }
 
-// morir
+// MORIR
 function morir(){
   vidas--;
 
@@ -244,7 +267,7 @@ function morir(){
 
     setTimeout(()=>{
       formAlias.style.display="block";
-      document.getElementById("alias").focus(); // 🔥 ARREGLA INPUT
+      document.getElementById("alias").focus();
     },500);
 
     return;
@@ -253,7 +276,7 @@ function morir(){
   estado="pausa";
 
   overlay.style.display="flex";
-  mensaje.innerText="💀 Perdiste";
+  mensaje.innerText="💀 Perdiste - toca SALTAR";
 
   y=200;
   vy=0;
@@ -261,19 +284,17 @@ function morir(){
   tortugas=[];
 }
 
-// formularios
+// FORMULARIOS
 function nextCel(){
   formAlias.style.display="none";
   formCel.style.display="block";
-  document.getElementById("cel").focus();
 }
 function nextMensaje(){
   formCel.style.display="none";
   formMensaje.style.display="block";
-  document.getElementById("mensajeInput").focus();
 }
 
-// enviar
+// ENVIAR
 function enviar(){
   let url="https://docs.google.com/forms/d/e/1FAIpQLScd3xAtGpSZJH3Xmli45Wy-6tqXp0bdQBw1hWsVaaU0MiNE9g/formResponse"
   +"?entry.1353246933="+alias.value
