@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Minijuego Tortugas</title>
+<style>
+body{
+  margin:0;
+  text-align:center;
+  background:#1a1a1a;
+  color:white;
+  font-family:Arial;
+}
+canvas{
+  display:block;
+  margin:auto;
+  background:#6ec1ff;
+}
+#overlay{
+  position:absolute;
+  width:100%;
+  height:100%;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  background:rgba(0,0,0,0.7);
+  flex-direction:column;
+}
+input{padding:10px;margin:5px;}
+button{padding:10px;}
+</style>
+</head>
+<body>
+
+<h1>🎮 MINIJUEGO DE FERNANDO DAEBOT 🎮</h1>
+<div>❤️ <span id="vidasUI"></span> | ⭐ <span id="puntosUI">0</span></div>
+
+<div id="overlay">
+<h2 id="mensaje">⏸ Presiona ESPACIO</h2>
+</div>
+
+<div id="formAlias" style="display:none;">
+<input id="alias" placeholder="Alias">
+<button onclick="nextCel()">Siguiente</button>
+</div>
+
+<div id="formCel" style="display:none;">
+<input id="cel" placeholder="Celular">
+<button onclick="nextMensaje()">Siguiente</button>
+</div>
+
+<div id="formMensaje" style="display:none;">
+<input id="mensajeInput" placeholder="Mensaje">
+<button onclick="enviar()">Enviar</button>
+</div>
+
+<canvas id="game" width="700" height="300"></canvas>
+
+<script>
+let canvas=document.getElementById("game");
+let ctx=canvas.getContext("2d");
+
+let suelo=240;
+let y=200, vy=0;
+
+let gravedad=0.8;
+let salto=-12;
+
+let saltos=0;
+let maxSaltos=2;
+
+let velocidad=4;
+let puntos=0;
+let mejor=0;
+let vidas=9;
+
+let estado="pausa";
+
+let tortugas=[];
+let ultimoSpawn=0;
+
+let tiempoInicio=Date.now();
+
+// control
+document.addEventListener("keydown",e=>{
+  if(e.code==="Space"){
+    if(estado==="pausa"){
+      estado="jugando";
+      overlay.style.display="none";
+    }else if(estado==="jugando"){
+      if(saltos<maxSaltos){
+        vy=salto;
+        saltos++;
+      }
+    }
+  }
+});
+
+// 🦖 T-REX MEJORADO
+function player(){
+  ctx.fillStyle="#2ecc71";
+
+  // cuerpo
+  ctx.fillRect(100,y,24,18);
+
+  // cabeza grande
+  ctx.fillRect(120,y+2,14,10);
+
+  // mandíbula
+  ctx.fillRect(122,y+10,12,4);
+
+  // cola
+  ctx.fillRect(94,y+8,6,4);
+
+  // patas
+  ctx.fillRect(105,y+18,4,5);
+  ctx.fillRect(112,y+18,4,5);
+
+  // ojo
+  ctx.fillStyle="white";
+  ctx.fillRect(126,y+5,3,3);
+
+  // 👨‍🔧 jinete tipo mario pixel
+  ctx.fillStyle="red"; // gorra
+  ctx.fillRect(104,y-10,12,4);
+
+  ctx.fillStyle="black"; // bigote/cara sombra
+  ctx.fillRect(108,y-6,4,3);
+
+  ctx.fillStyle="blue"; // ropa
+  ctx.fillRect(106,y-4,8,6);
+}
+
+// 🐢 tortuga
+function drawTortuga(t){
+  ctx.fillStyle="green";
+  ctx.fillRect(t.x,t.y,26,14);
+
+  ctx.fillStyle="#003300";
+  ctx.fillRect(t.x+6,t.y+4,14,6);
+}
+
+// ⚡ VELOCIDAD MEJORADA
+function actualizarVelocidad(){
+  let tiempo=(Date.now()-tiempoInicio)/1000;
+
+  if(tiempo < 40){
+    velocidad = 3 + tiempo * 0.03;
+  }else{
+    velocidad = 4 + (tiempo-40) * 0.08;
+  }
+
+  if(velocidad > 18) velocidad = 18;
+}
+
+// 🐢 GENERACIÓN MÁS DIFÍCIL
+function generar(){
+  let t=Date.now();
+
+  let delay = 900 - velocidad*40;
+  if(delay < 250) delay = 250;
+
+  if(t-ultimoSpawn < delay) return;
+
+  tortugas.push({
+    x:700,
+    y:suelo-15
+  });
+
+  ultimoSpawn = t;
+}
+
+// loop
+function loop(){
+
+  if(estado==="final") return; // 🔥 DETENER TODO
+
+  ctx.clearRect(0,0,700,300);
+
+  ctx.fillStyle="#6ec1ff";
+  ctx.fillRect(0,0,700,300);
+
+  ctx.fillStyle="#7a4b2b";
+  ctx.fillRect(0,suelo,700,60);
+
+  if(estado==="jugando"){
+
+    actualizarVelocidad();
+
+    vy+=gravedad;
+    y+=vy;
+
+    if(y>suelo-20){
+      y=suelo-20;
+      vy=0;
+      saltos=0;
+    }
+
+    generar();
+
+    tortugas.forEach((t,i)=>{
+      t.x-=velocidad;
+
+      drawTortuga(t);
+
+      if(
+        t.x < 120 &&
+        t.x + 26 > 100 &&
+        y + 20 > t.y &&
+        y < t.y + 14
+      ){
+        if(vy > 0 && y < t.y){
+          puntos++;
+          vy=-8;
+          tortugas.splice(i,1);
+        }else{
+          morir();
+        }
+      }
+
+      if(t.x < -30) tortugas.splice(i,1);
+    });
+  }
+
+  player();
+
+  puntosUI.innerText=puntos;
+  vidasUI.innerText="❤️".repeat(vidas);
+
+  requestAnimationFrame(loop);
+}
+
+// morir
+function morir(){
+  vidas--;
+
+  if(puntos>mejor) mejor=puntos;
+
+  if(vidas<=0){
+    estado="final";
+
+    overlay.style.display="flex";
+    mensaje.innerText="🏆 FIN\nMejor: "+mejor;
+
+    setTimeout(()=>{
+      formAlias.style.display="block";
+      document.getElementById("alias").focus(); // 🔥 ARREGLA INPUT
+    },500);
+
+    return;
+  }
+
+  estado="pausa";
+
+  overlay.style.display="flex";
+  mensaje.innerText="💀 Perdiste";
+
+  y=200;
+  vy=0;
+  saltos=0;
+  tortugas=[];
+}
+
+// formularios
+function nextCel(){
+  formAlias.style.display="none";
+  formCel.style.display="block";
+  document.getElementById("cel").focus();
+}
+function nextMensaje(){
+  formCel.style.display="none";
+  formMensaje.style.display="block";
+  document.getElementById("mensajeInput").focus();
+}
+
+// enviar
+function enviar(){
+  let url="https://docs.google.com/forms/d/e/1FAIpQLScd3xAtGpSZJH3Xmli45Wy-6tqXp0bdQBw1hWsVaaU0MiNE9g/formResponse"
+  +"?entry.1353246933="+alias.value
+  +"&entry.955407025="+cel.value
+  +"&entry.2053179358="+mejor
+  +"&entry.1886799256="+mensajeInput.value;
+
+  fetch(url,{mode:"no-cors"});
+  alert("🎉 Enviado");
+  location.reload();
+}
+
+loop();
+</script>
+
+</body>
+</html>
