@@ -14,17 +14,14 @@ body{
   font-family:Arial;
 }
 
-/* Canvas responsive */
 canvas{
   display:block;
   margin:auto;
   background:#6ec1ff;
   width:100%;
   max-width:700px;
-  height:auto;
 }
 
-/* Overlay (pausa / mensajes) */
 #overlay{
   position:fixed;
   top:0;
@@ -39,7 +36,6 @@ canvas{
   z-index:10;
 }
 
-/* Formularios centrados */
 #formAlias, #formCel, #formMensaje{
   position:fixed;
   top:50%;
@@ -62,10 +58,10 @@ button{
   font-size:16px;
 }
 
-/* 🔥 BOTÓN MEJORADO (más arriba) */
+/* 🔥 BOTÓN PERFECTO */
 #btnSalto{
   position:fixed;
-  bottom:120px; /* ← AQUÍ LA MEJORA */
+  bottom:120px;
   left:50%;
   transform:translateX(-50%);
   width:80%;
@@ -89,7 +85,6 @@ button{
 <h2 id="mensaje">📱 TOCA SALTAR PARA JUGAR</h2>
 </div>
 
-<!-- FORMULARIOS -->
 <div id="formAlias" style="display:none;">
 <input id="alias" placeholder="Alias">
 <button onclick="nextCel()">Siguiente</button>
@@ -133,7 +128,7 @@ let tortugas=[];
 let ultimoSpawn=0;
 let tiempoInicio=Date.now();
 
-// BOTÓN + TECLADO
+// CONTROLES
 let btn=document.getElementById("btnSalto");
 
 btn.onclick=accionSalto;
@@ -147,15 +142,22 @@ function accionSalto(){
   if(estado==="pausa"){
     estado="jugando";
     overlay.style.display="none";
-  }else if(estado==="jugando"){
-    if(saltos<maxSaltos){
-      vy=salto;
+    return;
+  }
+
+  if(estado==="jugando"){
+    if(saltos < maxSaltos){
+      vy = salto;
       saltos++;
+
+      if(saltos === 2){
+        vy -= 2;
+      }
     }
   }
 }
 
-// DINO + JINETE
+// PERSONAJE
 function player(){
   ctx.fillStyle="#2ecc71";
   ctx.fillRect(100,y,24,18);
@@ -188,34 +190,50 @@ function drawTortuga(t){
   ctx.fillRect(t.x+6,t.y+4,14,6);
 }
 
-// VELOCIDAD PROGRESIVA
+// VELOCIDAD PROGRESIVA (4 MIN MAX)
 function actualizarVelocidad(){
   let tiempo=(Date.now()-tiempoInicio)/1000;
 
-  if(tiempo < 40){
-    velocidad = 3 + tiempo * 0.03;
+  if(tiempo < 60){
+    velocidad = 3 + tiempo * 0.02;
+  }else if(tiempo < 120){
+    velocidad = 4 + (tiempo-60) * 0.04;
+  }else if(tiempo < 180){
+    velocidad = 6 + (tiempo-120) * 0.06;
   }else{
-    velocidad = 4 + (tiempo-40) * 0.08;
+    velocidad = 9 + (tiempo-180) * 0.08;
   }
 
-  if(velocidad > 18) velocidad = 18;
+  if(velocidad > 20) velocidad = 20;
 }
 
-// GENERACIÓN
+// GENERACIÓN PROGRESIVA
 function generar(){
   let t=Date.now();
+  let tiempo=(Date.now()-tiempoInicio)/1000;
 
-  let delay = 900 - velocidad*40;
-  if(delay < 250) delay = 250;
+  let delay;
 
-  if(t-ultimoSpawn < delay) return;
+  if(tiempo < 20){
+    delay = 1200;
+  }else if(tiempo < 60){
+    delay = 900;
+  }else if(tiempo < 120){
+    delay = 700;
+  }else if(tiempo < 180){
+    delay = 500;
+  }else{
+    delay = 350;
+  }
+
+  if(t - ultimoSpawn < delay) return;
 
   tortugas.push({
     x:700,
     y:suelo-15
   });
 
-  ultimoSpawn=t;
+  ultimoSpawn = t;
 }
 
 // LOOP
