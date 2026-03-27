@@ -3,132 +3,237 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Juego</title>
+<title>Minijuego Torneo</title>
 
 <style>
 body{
   margin:0;
   text-align:center;
-  background:#111;
+  background:#1a1a1a;
   color:white;
   font-family:Arial;
 }
 
+/* Canvas responsive */
 canvas{
+  display:block;
+  margin:auto;
   background:#6ec1ff;
   width:100%;
   max-width:700px;
+  height:auto;
 }
 
-#btn{
+/* Overlay (pausa / mensajes) */
+#overlay{
   position:fixed;
-  bottom:120px;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  background:rgba(0,0,0,0.75);
+  flex-direction:column;
+  z-index:10;
+}
+
+/* Formularios centrados */
+#formAlias, #formCel, #formMensaje{
+  position:fixed;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  background:#222;
+  padding:20px;
+  border-radius:12px;
+  z-index:20;
+}
+
+input{
+  padding:12px;
+  margin:8px;
+  font-size:16px;
+}
+
+button{
+  padding:12px 20px;
+  font-size:16px;
+}
+
+/* 🔥 BOTÓN MEJORADO (más arriba) */
+#btnSalto{
+  position:fixed;
+  bottom:120px; /* ← AQUÍ LA MEJORA */
   left:50%;
   transform:translateX(-50%);
   width:80%;
   max-width:400px;
-  padding:20px;
+  padding:22px;
   font-size:24px;
-  background:#ffcc00;
   border:none;
   border-radius:15px;
+  background:#ffcc00;
   z-index:30;
-}
-
-#overlay{
-  position:fixed;
-  width:100%;
-  height:100%;
-  background:rgba(0,0,0,0.7);
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  font-size:20px;
 }
 </style>
 </head>
 
 <body>
 
-<h3>🎮 MINIJUEGO 🎮</h3>
+<h2>🎮 MINIJUEGO DE FERNANDO DAEBOT 🎮</h2>
 <div>❤️ <span id="vidasUI"></span> | ⭐ <span id="puntosUI">0</span></div>
 
-<div id="overlay">TOCA EL BOTÓN PARA JUGAR</div>
+<div id="overlay">
+<h2 id="mensaje">📱 TOCA SALTAR PARA JUGAR</h2>
+</div>
+
+<!-- FORMULARIOS -->
+<div id="formAlias" style="display:none;">
+<input id="alias" placeholder="Alias">
+<button onclick="nextCel()">Siguiente</button>
+</div>
+
+<div id="formCel" style="display:none;">
+<input id="cel" placeholder="Celular">
+<button onclick="nextMensaje()">Siguiente</button>
+</div>
+
+<div id="formMensaje" style="display:none;">
+<input id="mensajeInput" placeholder="Mensaje">
+<button onclick="enviar()">Enviar</button>
+</div>
 
 <canvas id="game" width="700" height="300"></canvas>
 
-<button id="btn">SALTAR</button>
+<button id="btnSalto">SALTAR</button>
 
 <script>
 let canvas=document.getElementById("game");
 let ctx=canvas.getContext("2d");
 
-let y=200, vy=0;
 let suelo=240;
+let y=200, vy=0;
+
 let gravedad=0.8;
 let salto=-12;
 
-let estado="pausa";
 let saltos=0;
+let maxSaltos=2;
 
-let vidas=9;
+let velocidad=4;
 let puntos=0;
+let mejor=0;
+let vidas=9;
+
+let estado="pausa";
 
 let tortugas=[];
+let ultimoSpawn=0;
+let tiempoInicio=Date.now();
 
-// BOTÓN
-let btn=document.getElementById("btn");
+// BOTÓN + TECLADO
+let btn=document.getElementById("btnSalto");
 
-btn.onclick=accion;
-btn.ontouchstart=accion;
+btn.onclick=accionSalto;
+btn.ontouchstart=accionSalto;
 
 document.addEventListener("keydown",e=>{
-  if(e.code==="Space") accion();
+  if(e.code==="Space") accionSalto();
 });
 
-function accion(){
+function accionSalto(){
   if(estado==="pausa"){
     estado="jugando";
     overlay.style.display="none";
-  }else{
-    if(saltos<2){
+  }else if(estado==="jugando"){
+    if(saltos<maxSaltos){
       vy=salto;
       saltos++;
     }
   }
 }
 
-// JUGADOR
+// DINO + JINETE
 function player(){
-  ctx.fillStyle="green";
-  ctx.fillRect(100,y,25,20);
+  ctx.fillStyle="#2ecc71";
+  ctx.fillRect(100,y,24,18);
+  ctx.fillRect(120,y+2,14,10);
+  ctx.fillRect(122,y+10,12,4);
+  ctx.fillRect(94,y+8,6,4);
+
+  ctx.fillRect(105,y+18,4,5);
+  ctx.fillRect(112,y+18,4,5);
+
+  ctx.fillStyle="white";
+  ctx.fillRect(126,y+5,3,3);
+
+  ctx.fillStyle="red";
+  ctx.fillRect(104,y-10,12,4);
+
+  ctx.fillStyle="black";
+  ctx.fillRect(108,y-6,4,3);
+
+  ctx.fillStyle="blue";
+  ctx.fillRect(106,y-4,8,6);
 }
 
 // TORTUGA
-function tortuga(t){
+function drawTortuga(t){
   ctx.fillStyle="green";
-  ctx.fillRect(t.x,t.y,25,15);
+  ctx.fillRect(t.x,t.y,26,14);
+
+  ctx.fillStyle="#003300";
+  ctx.fillRect(t.x+6,t.y+4,14,6);
 }
 
-// GENERAR
-setInterval(()=>{
-  if(estado==="jugando"){
-    tortugas.push({x:700,y:suelo-15});
+// VELOCIDAD PROGRESIVA
+function actualizarVelocidad(){
+  let tiempo=(Date.now()-tiempoInicio)/1000;
+
+  if(tiempo < 40){
+    velocidad = 3 + tiempo * 0.03;
+  }else{
+    velocidad = 4 + (tiempo-40) * 0.08;
   }
-},1000);
+
+  if(velocidad > 18) velocidad = 18;
+}
+
+// GENERACIÓN
+function generar(){
+  let t=Date.now();
+
+  let delay = 900 - velocidad*40;
+  if(delay < 250) delay = 250;
+
+  if(t-ultimoSpawn < delay) return;
+
+  tortugas.push({
+    x:700,
+    y:suelo-15
+  });
+
+  ultimoSpawn=t;
+}
 
 // LOOP
 function loop(){
+
+  if(estado==="final") return;
 
   ctx.clearRect(0,0,700,300);
 
   ctx.fillStyle="#6ec1ff";
   ctx.fillRect(0,0,700,300);
 
-  ctx.fillStyle="brown";
+  ctx.fillStyle="#7a4b2b";
   ctx.fillRect(0,suelo,700,60);
 
   if(estado==="jugando"){
+
+    actualizarVelocidad();
 
     vy+=gravedad;
     y+=vy;
@@ -139,27 +244,29 @@ function loop(){
       saltos=0;
     }
 
-    tortugas.forEach((t,i)=>{
-      t.x-=5;
+    generar();
 
-      tortuga(t);
+    tortugas.forEach((t,i)=>{
+      t.x-=velocidad;
+
+      drawTortuga(t);
 
       if(
-        t.x<120 && t.x+25>100 &&
-        y+20>t.y && y<t.y+15
+        t.x < 120 &&
+        t.x + 26 > 100 &&
+        y + 20 > t.y &&
+        y < t.y + 14
       ){
-        if(vy>0){
+        if(vy > 0 && y < t.y){
           puntos++;
           vy=-8;
           tortugas.splice(i,1);
         }else{
-          vidas--;
-          estado="pausa";
-          overlay.innerText="PERDISTE - TOCA PARA SEGUIR";
-          overlay.style.display="flex";
-          tortugas=[];
+          morir();
         }
       }
+
+      if(t.x < -30) tortugas.splice(i,1);
     });
   }
 
@@ -169,6 +276,60 @@ function loop(){
   vidasUI.innerText="❤️".repeat(vidas);
 
   requestAnimationFrame(loop);
+}
+
+// MORIR
+function morir(){
+  vidas--;
+
+  if(puntos>mejor) mejor=puntos;
+
+  if(vidas<=0){
+    estado="final";
+
+    overlay.style.display="flex";
+    mensaje.innerText="🏆 FIN\nMejor: "+mejor;
+
+    setTimeout(()=>{
+      formAlias.style.display="block";
+      document.getElementById("alias").focus();
+    },500);
+
+    return;
+  }
+
+  estado="pausa";
+
+  overlay.style.display="flex";
+  mensaje.innerText="💀 Perdiste - toca SALTAR";
+
+  y=200;
+  vy=0;
+  saltos=0;
+  tortugas=[];
+}
+
+// FORMULARIOS
+function nextCel(){
+  formAlias.style.display="none";
+  formCel.style.display="block";
+}
+function nextMensaje(){
+  formCel.style.display="none";
+  formMensaje.style.display="block";
+}
+
+// ENVIAR
+function enviar(){
+  let url="https://docs.google.com/forms/d/e/1FAIpQLScd3xAtGpSZJH3Xmli45Wy-6tqXp0bdQBw1hWsVaaU0MiNE9g/formResponse"
+  +"?entry.1353246933="+alias.value
+  +"&entry.955407025="+cel.value
+  +"&entry.2053179358="+mejor
+  +"&entry.1886799256="+mensajeInput.value;
+
+  fetch(url,{mode:"no-cors"});
+  alert("🎉 Enviado");
+  location.reload();
 }
 
 loop();
