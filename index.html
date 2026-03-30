@@ -36,28 +36,6 @@ canvas{
   z-index:10;
 }
 
-#formAlias, #formCel, #formMensaje{
-  position:fixed;
-  top:50%;
-  left:50%;
-  transform:translate(-50%,-50%);
-  background:#222;
-  padding:20px;
-  border-radius:12px;
-  z-index:20;
-}
-
-input{
-  padding:12px;
-  margin:8px;
-  font-size:16px;
-}
-
-button{
-  padding:12px 20px;
-  font-size:16px;
-}
-
 #btnSalto{
   position:fixed;
   bottom:120px;
@@ -84,21 +62,6 @@ button{
 <h2 id="mensaje">📱 TOCA SALTAR PARA JUGAR</h2>
 </div>
 
-<div id="formAlias" style="display:none;">
-<input id="alias" placeholder="Alias">
-<button onclick="nextCel()">Siguiente</button>
-</div>
-
-<div id="formCel" style="display:none;">
-<input id="cel" placeholder="Celular">
-<button onclick="nextMensaje()">Siguiente</button>
-</div>
-
-<div id="formMensaje" style="display:none;">
-<input id="mensajeInput" placeholder="Mensaje">
-<button onclick="enviar()">Enviar</button>
-</div>
-
 <canvas id="game" width="700" height="300"></canvas>
 <button id="btnSalto">SALTAR</button>
 
@@ -111,18 +74,13 @@ let y=200, vy=0;
 
 let gravedad=0.8;
 
-// salto base (tap corto)
-let saltoBase=-8;
-
-// salto máximo (mantener)
-let saltoMax=-14;
+let saltoBajo=-8;
+let saltoAlto=-15;
 
 let saltos=0;
-let maxSaltos=2;
 
 let velocidad=4;
 let puntos=0;
-let mejor=0;
 let vidas=4;
 
 let estado="pausa";
@@ -131,27 +89,29 @@ let tortugas=[];
 let ultimoSpawn=0;
 let tiempoInicio=Date.now();
 
-// CONTROL SALTO VARIABLE
-let presionando=false;
-let tiempoSalto=0;
+// CONTROL TOQUE LIMPIO
+let puedeTocar=true;
 
-// CONTROLES
 let btn=document.getElementById("btnSalto");
 
-btn.addEventListener("touchstart",iniciarSalto);
-btn.addEventListener("touchend",soltarSalto);
+btn.addEventListener("touchstart", (e)=>{
+  e.preventDefault();
+  if(!puedeTocar) return;
+  puedeTocar=false;
+  accionSalto();
+});
 
-btn.addEventListener("mousedown",iniciarSalto);
-btn.addEventListener("mouseup",soltarSalto);
+btn.addEventListener("touchend", ()=>{
+  puedeTocar=true;
+});
 
+// PC
+btn.addEventListener("click", accionSalto);
 document.addEventListener("keydown",e=>{
-  if(e.code==="Space") iniciarSalto();
-});
-document.addEventListener("keyup",e=>{
-  if(e.code==="Space") soltarSalto();
+  if(e.code==="Space") accionSalto();
 });
 
-function iniciarSalto(){
+function accionSalto(){
   if(estado==="pausa"){
     estado="jugando";
     overlay.style.display="none";
@@ -159,84 +119,53 @@ function iniciarSalto(){
   }
 
   if(estado==="jugando"){
-    if(saltos < maxSaltos){
-      presionando=true;
-      tiempoSalto=0;
-      vy=saltoBase;
-      saltos++;
+    if(saltos === 0){
+      vy = saltoBajo;
+      saltos = 1;
+    }
+    else if(saltos === 1){
+      vy = saltoAlto;
+      saltos = 2;
     }
   }
 }
 
-function soltarSalto(){
-  presionando=false;
-}
-
-// PERSONAJE
 function player(){
   ctx.fillStyle="#2ecc71";
   ctx.fillRect(100,y,24,18);
-  ctx.fillRect(120,y+2,14,10);
-  ctx.fillRect(122,y+10,12,4);
-  ctx.fillRect(94,y+8,6,4);
-
-  ctx.fillRect(105,y+18,4,5);
-  ctx.fillRect(112,y+18,4,5);
-
-  ctx.fillStyle="white";
-  ctx.fillRect(126,y+5,3,3);
-
-  ctx.fillStyle="red";
-  ctx.fillRect(104,y-10,12,4);
-
-  ctx.fillStyle="black";
-  ctx.fillRect(108,y-6,4,3);
-
-  ctx.fillStyle="blue";
-  ctx.fillRect(106,y-4,8,6);
 }
 
-// TORTUGA
 function drawTortuga(t){
   ctx.fillStyle="green";
   ctx.fillRect(t.x,t.y,26,14);
-
-  ctx.fillStyle="#003300";
-  ctx.fillRect(t.x+6,t.y+4,14,6);
 }
 
-// VELOCIDAD PROGRESIVA
 function actualizarVelocidad(){
   let tiempo=(Date.now()-tiempoInicio)/1000;
 
   if(tiempo < 30){
-    velocidad = 3 + tiempo * 0.04; // inicio suave
-  }
-  else if(tiempo < 60){
-    velocidad = 4.2 + (tiempo-30) * 0.2; // subida fuerte
-  }
-  else{
-    velocidad = 10 + (tiempo-60) * 0.3; // casi imposible
+    velocidad = 3 + tiempo * 0.04;
+  }else if(tiempo < 60){
+    velocidad = 4.2 + (tiempo-30) * 0.2;
+  }else{
+    velocidad = 10 + (tiempo-60) * 0.3;
   }
 
   if(velocidad > 28) velocidad = 28;
 }
 
-// GENERACIÓN
 function generar(){
   let t=Date.now();
   let tiempo=(Date.now()-tiempoInicio)/1000;
 
   let delay;
 
-  if(tiempo < 20){
-    delay = 1200;
-  }else if(tiempo < 60){
+  if(tiempo < 30){
     delay = 900;
-  }else if(tiempo < 120){
-    delay = 700;
+  }else if(tiempo < 60){
+    delay = 450;
   }else{
-    delay = 500;
+    delay = 220;
   }
 
   if(t - ultimoSpawn < delay) return;
@@ -249,10 +178,7 @@ function generar(){
   ultimoSpawn = t;
 }
 
-// LOOP
 function loop(){
-
-  if(estado==="final") return;
 
   ctx.clearRect(0,0,700,300);
 
@@ -265,12 +191,6 @@ function loop(){
   if(estado==="jugando"){
 
     actualizarVelocidad();
-
-    // SALTO PROGRESIVO
-    if(presionando && tiempoSalto < 60){
-      vy -= 0.15;
-      tiempoSalto++;
-    }
 
     vy+=gravedad;
     y+=vy;
@@ -296,7 +216,7 @@ function loop(){
       ){
         if(vy > 0 && y < t.y){
           puntos++;
-          vy=-8;
+          vy=-10;
           tortugas.splice(i,1);
         }else{
           morir();
@@ -310,32 +230,21 @@ function loop(){
   player();
 
   puntosUI.innerText=puntos;
-  vidasUI.innerText="❤️".repeat(vidas);
+  vidasUI.innerText="❤️".repeat(Math.max(0, vidas));
 
   requestAnimationFrame(loop);
 }
 
-// MORIR
 function morir(){
   vidas--;
 
-  if(puntos>mejor) mejor=puntos;
-
-  if(vidas<=0){
-    estado="final";
-
+  if(vidas <= 0){
+    estado="pausa";
     overlay.style.display="flex";
-    mensaje.innerText="🏆 FIN\nMejor: "+mejor;
-
-    setTimeout(()=>{
-      formAlias.style.display="block";
-      document.getElementById("alias").focus();
-    },500);
-
+    mensaje.innerText="🏆 FIN\nPuntos: "+puntos;
     return;
   }
 
-  // 🔥 REINICIO COMPLETO POR VIDA
   estado="pausa";
   overlay.style.display="flex";
   mensaje.innerText="💀 Perdiste - toca SALTAR";
@@ -347,29 +256,6 @@ function morir(){
 
   velocidad=4;
   tiempoInicio=Date.now();
-}
-
-// FORMULARIOS
-function nextCel(){
-  formAlias.style.display="none";
-  formCel.style.display="block";
-}
-function nextMensaje(){
-  formCel.style.display="none";
-  formMensaje.style.display="block";
-}
-
-// ENVIAR
-function enviar(){
-  let url="https://docs.google.com/forms/d/e/1FAIpQLScd3xAtGpSZJH3Xmli45Wy-6tqXp0bdQBw1hWsVaaU0MiNE9g/formResponse"
-  +"?entry.1353246933="+alias.value
-  +"&entry.955407025="+cel.value
-  +"&entry.2053179358="+mejor
-  +"&entry.1886799256="+mensajeInput.value;
-
-  fetch(url,{mode:"no-cors"});
-  alert("🎉 Enviado");
-  location.reload();
 }
 
 loop();
