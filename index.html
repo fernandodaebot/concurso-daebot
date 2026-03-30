@@ -89,7 +89,6 @@ let tortugas=[];
 let ultimoSpawn=0;
 let tiempoInicio=Date.now();
 
-// CONTROL TOQUE LIMPIO
 let puedeTocar=true;
 
 let btn=document.getElementById("btnSalto");
@@ -105,8 +104,8 @@ btn.addEventListener("touchend", ()=>{
   puedeTocar=true;
 });
 
-// PC
 btn.addEventListener("click", accionSalto);
+
 document.addEventListener("keydown",e=>{
   if(e.code==="Space") accionSalto();
 });
@@ -130,16 +129,53 @@ function accionSalto(){
   }
 }
 
+// 🦖 PERSONAJE PIXEL T-REX + JINETE
 function player(){
+  // cuerpo
   ctx.fillStyle="#2ecc71";
-  ctx.fillRect(100,y,24,18);
+  ctx.fillRect(100,y,26,16);
+
+  // cabeza
+  ctx.fillRect(124,y+2,14,10);
+
+  // boca
+  ctx.fillStyle="#1e8449";
+  ctx.fillRect(130,y+8,8,3);
+
+  // cola
+  ctx.fillStyle="#27ae60";
+  ctx.fillRect(94,y+6,8,4);
+
+  // patas
+  ctx.fillStyle="#145a32";
+  ctx.fillRect(104,y+16,4,6);
+  ctx.fillRect(112,y+16,4,6);
+
+  // ojo
+  ctx.fillStyle="white";
+  ctx.fillRect(132,y+4,3,3);
+
+  // 🧍 jinete estilo retro
+  ctx.fillStyle="red";
+  ctx.fillRect(108,y-10,10,4);
+
+  ctx.fillStyle="black";
+  ctx.fillRect(110,y-6,4,3);
+
+  ctx.fillStyle="blue";
+  ctx.fillRect(108,y-4,8,6);
 }
 
+// TORTUGA
 function drawTortuga(t){
   ctx.fillStyle="green";
   ctx.fillRect(t.x,t.y,26,14);
+
+  ctx.fillStyle="#003300";
+  ctx.fillRect(t.x+6,t.y+4,14,6);
 }
 
+// VELOCIDAD
 function actualizarVelocidad(){
   let tiempo=(Date.now()-tiempoInicio)/1000;
 
@@ -154,6 +190,7 @@ function actualizarVelocidad(){
   if(velocidad > 28) velocidad = 28;
 }
 
+// GENERACIÓN
 function generar(){
   let t=Date.now();
   let tiempo=(Date.now()-tiempoInicio)/1000;
@@ -178,6 +215,7 @@ function generar(){
   ultimoSpawn = t;
 }
 
+// LOOP
 function loop(){
 
   ctx.clearRect(0,0,700,300);
