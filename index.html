@@ -209,17 +209,17 @@ function drawTortuga(t){
 function actualizarVelocidad(){
   let tiempo=(Date.now()-tiempoInicio)/1000;
 
-  if(tiempo < 60){
-    velocidad = 3 + tiempo * 0.02;
-  }else if(tiempo < 120){
-    velocidad = 4 + (tiempo-60) * 0.04;
-  }else if(tiempo < 180){
-    velocidad = 6 + (tiempo-120) * 0.06;
-  }else{
-    velocidad = 9 + (tiempo-180) * 0.08;
+  if(tiempo < 30){
+    velocidad = 3 + tiempo * 0.04; // inicio suave
+  }
+  else if(tiempo < 60){
+    velocidad = 4.2 + (tiempo-30) * 0.2; // subida fuerte
+  }
+  else{
+    velocidad = 10 + (tiempo-60) * 0.3; // casi imposible
   }
 
-  if(velocidad > 20) velocidad = 20;
+  if(velocidad > 28) velocidad = 28;
 }
 
 // GENERACIÓN
